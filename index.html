@@ -7,11 +7,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background: linear-gradient(45deg, #0a0a0a, #1a0033, #330066);
@@ -34,10 +30,7 @@
             overflow: hidden;
         }
 
-        canvas {
-            display: block;
-            background: transparent;
-        }
+        canvas { display: block; background: transparent; }
 
         .neon-text {
             color: #00ffff;
@@ -47,8 +40,7 @@
 
         .game-over {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
             background: rgba(0, 0, 0, 0.9);
@@ -94,8 +86,7 @@
 
         .score {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 20px; left: 20px;
             color: #00ffff;
             text-shadow: 0 0 10px #00ffff;
             font-size: 1.5em;
@@ -105,8 +96,7 @@
 
         .speed-indicator {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 20px; right: 20px;
             color: #ff00ff;
             text-shadow: 0 0 10px #ff00ff;
             font-size: 1em;
@@ -116,8 +106,7 @@
 
         .instructions {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
+            bottom: 20px; left: 50%;
             transform: translateX(-50%);
             color: #ff00ff;
             text-shadow: 0 0 5px #ff00ff;
@@ -130,9 +119,7 @@
             50% { transform: scale(1.1); }
         }
 
-        .hidden {
-            display: none;
-        }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -160,16 +147,7 @@
         const instructionsElement = document.getElementById('instructions');
 
         // Game variables
-        let bird = {
-            x: 80,
-            y: 250,
-            width: 20,
-            height: 20,
-            velocity: 0,
-            gravity: 0.5,
-            jump: -8
-        };
-
+        let bird = { x: 80, y: 250, width: 20, height: 20, velocity: 0, gravity: 0.5, jump: -8 };
         let pipes = [];
         let score = 0;
         let gameStarted = false;
@@ -180,7 +158,11 @@
         let gameSpeed = 2;
         let maxSpeed = 8;
 
-        // Audio variables
+        // Pipe control
+        let pipeTimer = 0;
+        let pipeInterval = 90;
+
+        // Audio
         let customMusic;
         let audioContext;
         let gameOverSound;
@@ -194,12 +176,18 @@
         function initCustomMusic() {
             try {
                 customMusic = new Audio("mp3.mp3");
-                customMusic.loop = true;
+                customMusic.loop = false; // música define duração da partida
                 customMusic.volume = 0.5;
-                customMusic.addEventListener('error', function() {
-                    console.log('Erro ao carregar música personalizada.');
+
+                customMusic.addEventListener('error', () => {
+                    console.log('Erro ao carregar música.');
                     customMusic = null;
                 });
+
+                customMusic.addEventListener('ended', () => {
+                    winGame(); // vitória quando música acaba
+                });
+
             } catch (error) {
                 console.log('Erro ao inicializar música:', error);
                 customMusic = null;
@@ -210,21 +198,15 @@
             if (customMusic) {
                 try {
                     customMusic.currentTime = 0;
-                    customMusic.play().catch(err => console.log(err));
-                } catch (error) {
-                    console.log(error);
-                }
+                    customMusic.play().catch(err => console.log('Erro ao tocar música:', err));
+                } catch (error) { console.log('Erro ao tocar música:', error); }
             }
         }
 
         function stopCustomMusic() {
             if (customMusic) {
-                try {
-                    customMusic.pause();
-                    customMusic.currentTime = 0;
-                } catch (error) {
-                    console.log(error);
-                }
+                try { customMusic.pause(); customMusic.currentTime = 0; }
+                catch (error) { console.log('Erro ao parar música:', error); }
             }
         }
 
@@ -306,6 +288,8 @@
         function updateGame() {
             if (gameOver) return;
             frameCount++;
+
+            // Bird
             if (gameStarted) {
                 bird.velocity += bird.gravity;
                 bird.y += bird.velocity;
@@ -314,7 +298,16 @@
                     return;
                 }
             }
-            if (frameCount % 90 === 0 && gameStarted) createPipe();
+
+            // Pipes
+            if (gameStarted) {
+                pipeTimer++;
+                if (pipeTimer >= pipeInterval / gameSpeed) {
+                    createPipe();
+                    pipeTimer = 0;
+                }
+            }
+
             pipes.forEach((pipe, index) => {
                 if (gameStarted) pipe.x -= gameSpeed;
                 if (bird.x < pipe.x + pipeWidth &&
@@ -356,22 +349,27 @@
             stopCustomMusic();
             setTimeout(() => { if (audioContext) playGameOverSound(); }, 100);
             finalScoreElement.textContent = `Score: ${score}`;
+            gameOverScreen.querySelector("h1").textContent = "GAME OVER";
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function winGame() {
+            gameOver = true;
+            stopCustomMusic();
+            finalScoreElement.textContent = `Score: ${score}`;
+            gameOverScreen.querySelector("h1").textContent = "VOCÊ GANHOU!";
             gameOverScreen.classList.remove('hidden');
         }
 
         function restartGame() {
-            bird.y = 250;
-            bird.velocity = 0;
-            pipes = [];
-            score = 0;
-            gameStarted = false;
-            gameOver = false;
-            frameCount = 0;
-            gameSpeed = 2;
+            bird.y = 250; bird.velocity = 0;
+            pipes = []; score = 0; gameStarted = false; gameOver = false;
+            frameCount = 0; gameSpeed = 2; pipeTimer = 0;
             scoreElement.textContent = 'Score: 0';
             speedElement.textContent = 'Velocidade: 1x';
             gameOverScreen.classList.add('hidden');
             instructionsElement.classList.remove('hidden');
+            gameOverScreen.querySelector("h1").textContent = "GAME OVER";
             stopCustomMusic();
         }
 
@@ -386,15 +384,9 @@
 
         // Event listeners
         canvas.addEventListener('click', jump);
-        canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            jump();
-        }, { passive: false });
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); jump(); }, { passive: false });
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                jump();
-            }
+            if (e.code === 'Space') { e.preventDefault(); jump(); }
         });
 
         gameLoop();
