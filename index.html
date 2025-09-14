@@ -130,11 +130,6 @@
             50% { transform: scale(1.1); }
         }
 
-        @keyframes neonGlow {
-            0%, 100% { filter: brightness(1) saturate(1); }
-            50% { filter: brightness(1.5) saturate(1.5); }
-        }
-
         .hidden {
             display: none;
         }
@@ -182,8 +177,8 @@
         let pipeGap = 120;
         let pipeWidth = 40;
         let frameCount = 0;
-        let gameSpeed = 2; // Velocidade inicial
-        let maxSpeed = 8; // Velocidade máxima
+        let gameSpeed = 2;
+        let maxSpeed = 8;
 
         // Audio variables
         let customMusic;
@@ -197,24 +192,14 @@
         }
 
         function initCustomMusic() {
-            
-            
             try {
-                // Tente com o link do Google Drive corrigido
                 customMusic = new Audio("mp3.mp3");
                 customMusic.loop = true;
                 customMusic.volume = 0.5;
-                
-                // Adiciona evento para detectar erro no carregamento
                 customMusic.addEventListener('error', function() {
-                    console.log('Erro ao carregar música personalizada. Usando música padrão.');
+                    console.log('Erro ao carregar música personalizada.');
                     customMusic = null;
                 });
-                
-                customMusic.addEventListener('canplaythrough', function() {
-                    console.log('Música personalizada carregada com sucesso!');
-                });
-                
             } catch (error) {
                 console.log('Erro ao inicializar música:', error);
                 customMusic = null;
@@ -225,11 +210,9 @@
             if (customMusic) {
                 try {
                     customMusic.currentTime = 0;
-                    customMusic.play().catch(function(error) {
-                        console.log('Erro ao tocar música:', error);
-                    });
+                    customMusic.play().catch(err => console.log(err));
                 } catch (error) {
-                    console.log('Erro ao tocar música:', error);
+                    console.log(error);
                 }
             }
         }
@@ -240,7 +223,7 @@
                     customMusic.pause();
                     customMusic.currentTime = 0;
                 } catch (error) {
-                    console.log('Erro ao parar música:', error);
+                    console.log(error);
                 }
             }
         }
@@ -248,18 +231,13 @@
         function createGameOverSound() {
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
-            
             oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(50, audioContext.currentTime + 1);
-            
             oscillator.type = 'sawtooth';
-            
             gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
-            
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
-            
             gameOverSound = { oscillator, gainNode };
         }
 
@@ -268,144 +246,93 @@
                 gameOverSound.oscillator.start();
                 gameOverSound.oscillator.stop(audioContext.currentTime + 1);
             }
-            createGameOverSound(); // Create new sound for next time
+            createGameOverSound();
         }
 
         function drawBird() {
             ctx.save();
-            
-            // Neon glow effect
             ctx.shadowColor = '#00ffff';
             ctx.shadowBlur = 15;
             ctx.fillStyle = '#00ffff';
-            
-            // Draw bird body
             ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
-            
-            // Add inner glow
             ctx.shadowBlur = 5;
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(bird.x + 3, bird.y + 3, bird.width - 6, bird.height - 6);
-            
             ctx.restore();
         }
 
         function drawPipes() {
             pipes.forEach(pipe => {
                 ctx.save();
-                
-                // Top pipe
                 ctx.shadowColor = '#ff00ff';
                 ctx.shadowBlur = 20;
                 ctx.fillStyle = '#ff00ff';
                 ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-                
-                // Top pipe inner glow
                 ctx.shadowBlur = 5;
                 ctx.fillStyle = '#ffaaff';
                 ctx.fillRect(pipe.x + 5, 0, pipeWidth - 10, pipe.top);
-                
-                // Bottom pipe
                 ctx.shadowColor = '#ff00ff';
                 ctx.shadowBlur = 20;
                 ctx.fillStyle = '#ff00ff';
                 ctx.fillRect(pipe.x, pipe.bottom, pipeWidth, canvas.height - pipe.bottom);
-                
-                // Bottom pipe inner glow
                 ctx.shadowBlur = 5;
                 ctx.fillStyle = '#ffaaff';
                 ctx.fillRect(pipe.x + 5, pipe.bottom, pipeWidth - 10, canvas.height - pipe.bottom);
-                
                 ctx.restore();
             });
         }
 
         function drawBackground() {
-            // Animated background
             ctx.save();
-            
-            // Create gradient
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             gradient.addColorStop(0, `rgba(0, 0, ${Math.sin(frameCount * 0.01) * 50 + 100}, 0.1)`);
             gradient.addColorStop(1, `rgba(${Math.sin(frameCount * 0.005) * 50 + 50}, 0, 100, 0.1)`);
-            
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Add moving stars
             ctx.fillStyle = '#ffffff';
             for (let i = 0; i < 20; i++) {
                 const x = (frameCount * (i + 1) * 0.5) % (canvas.width + 10);
                 const y = (i * 30) % canvas.height;
                 ctx.fillRect(x, y, 2, 2);
             }
-            
             ctx.restore();
         }
 
         function createPipe() {
             const topHeight = Math.random() * (canvas.height - pipeGap - 100) + 50;
-            pipes.push({
-                x: canvas.width,
-                top: topHeight,
-                bottom: topHeight + pipeGap,
-                passed: false
-            });
+            pipes.push({ x: canvas.width, top: topHeight, bottom: topHeight + pipeGap, passed: false });
         }
 
         function updateGame() {
             if (gameOver) return;
-
             frameCount++;
-
-            // Update bird
             if (gameStarted) {
                 bird.velocity += bird.gravity;
                 bird.y += bird.velocity;
-                
-                // Check boundaries
                 if (bird.y <= 0 || bird.y + bird.height >= canvas.height) {
                     endGame();
                     return;
                 }
             }
-
-            // Create pipes
-            if (frameCount % 90 === 0 && gameStarted) {
-                createPipe();
-            }
-
-            // Update pipes
+            if (frameCount % 90 === 0 && gameStarted) createPipe();
             pipes.forEach((pipe, index) => {
-                if (gameStarted) {
-                    pipe.x -= gameSpeed; // Usa velocidade variável
-                }
-
-                // Check collision
+                if (gameStarted) pipe.x -= gameSpeed;
                 if (bird.x < pipe.x + pipeWidth &&
                     bird.x + bird.width > pipe.x &&
                     (bird.y < pipe.top || bird.y + bird.height > pipe.bottom)) {
                     endGame();
                     return;
                 }
-
-                // Check score
                 if (!pipe.passed && bird.x > pipe.x + pipeWidth) {
                     pipe.passed = true;
                     score++;
                     scoreElement.textContent = `Score: ${score}`;
-                    
-                    // Aumenta velocidade gradativamente a cada 3 pontos
                     if (score % 3 === 0 && gameSpeed < maxSpeed) {
                         gameSpeed += 0.3;
                         updateSpeedDisplay();
                     }
                 }
-
-                // Remove off-screen pipes
-                if (pipe.x + pipeWidth < 0) {
-                    pipes.splice(index, 1);
-                }
+                if (pipe.x + pipeWidth < 0) pipes.splice(index, 1);
             });
         }
 
@@ -419,24 +346,15 @@
                 gameStarted = true;
                 instructionsElement.classList.add('hidden');
                 initAudio();
-                playCustomMusic(); // Toca sua música personalizada
+                playCustomMusic();
             }
-            
-            if (!gameOver) {
-                bird.velocity = bird.jump;
-            }
+            if (!gameOver) bird.velocity = bird.jump;
         }
 
         function endGame() {
             gameOver = true;
-            stopCustomMusic(); // Para sua música
-            
-            setTimeout(() => {
-                if (audioContext) {
-                    playGameOverSound();
-                }
-            }, 100);
-            
+            stopCustomMusic();
+            setTimeout(() => { if (audioContext) playGameOverSound(); }, 100);
             finalScoreElement.textContent = `Score: ${score}`;
             gameOverScreen.classList.remove('hidden');
         }
@@ -449,29 +367,29 @@
             gameStarted = false;
             gameOver = false;
             frameCount = 0;
-            gameSpeed = 2; // Reset da velocidade
-            
+            gameSpeed = 2;
             scoreElement.textContent = 'Score: 0';
             speedElement.textContent = 'Velocidade: 1x';
             gameOverScreen.classList.add('hidden');
             instructionsElement.classList.remove('hidden');
-            
-            stopCustomMusic(); // Para sua música
+            stopCustomMusic();
         }
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
             drawBackground();
             drawPipes();
             drawBird();
             updateGame();
-            
             requestAnimationFrame(gameLoop);
         }
 
         // Event listeners
         canvas.addEventListener('click', jump);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            jump();
+        }, { passive: false });
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
@@ -479,7 +397,6 @@
             }
         });
 
-        // Start game loop
         gameLoop();
     </script>
 </body>
