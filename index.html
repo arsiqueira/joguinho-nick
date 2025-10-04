@@ -147,20 +147,20 @@
         const instructionsElement = document.getElementById('instructions');
 
         // Game variables
-        let bird = { x: 80, y: 250, width: 20, height: 20, velocity: 0, gravity: 0.5, jump: -8 };
+        let bird = { x: 80, y: 250, width: 20, height: 20, velocity: 0, gravity: 0.5, jump: -9 };
         let pipes = [];
         let score = 0;
         let gameStarted = false;
         let gameOver = false;
-        let pipeGap = 120;
+        let pipeGap = 140;
         let pipeWidth = 40;
         let frameCount = 0;
-        let gameSpeed = 2;
+        let gameSpeed = 3;
         let maxSpeed = 8;
 
         // Pipe control
         let pipeTimer = 0;
-        let pipeInterval = 90;
+        let pipeInterval = 150;
 
         // Audio
         let customMusic;
